@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import prompts from 'prompts';
 import shell from 'shelljs';
 import kleur from 'kleur';
