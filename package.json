@@ -1,0 +1,37 @@
+{
+  "name": "create-fumaz",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Create an app using the Fumaz stack",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "bin": {
+    "create-fumaz": "./dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fumaz/create-fumaz.git"
+  },
+  "keywords": [
+    "fumaz",
+    "stack",
+    "create"
+  ],
+  "author": "Fumaz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Fumaz/create-fumaz/issues"
+  },
+  "homepage": "https://github.com/Fumaz/create-fumaz#readme",
+  "dependencies": {
+    "prompts": "^2.4.2",
+    "shelljs": "^0.8.5"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9",
+    "@types/shelljs": "^0.8.15",
+    "typescript": "^5.3.3"
+  }
+}
