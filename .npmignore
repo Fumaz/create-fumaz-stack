@@ -1,0 +1,4 @@
+bun.lockb
+.gitignore
+node_modules
+src
