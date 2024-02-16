@@ -6,7 +6,7 @@ import kleur from 'kleur';
 import * as fs from "node:fs";
 
 async function main() {
-    console.log(kleur.bold().magenta('Create Fumaz App'));
+    console.log(kleur.bold().magenta('Create Fumaz App 🚀'));
     console.log();
 
     const response = await prompts([
@@ -123,6 +123,21 @@ async function main() {
                     selected: true
                 },
                 {
+                    title: 'Remix Flat Routes',
+                    value: 'remix-flat-routes',
+                    selected: true
+                },
+                {
+                    title: 'Type Safe Routes',
+                    value: 'remix-routes',
+                    selected: true
+                },
+                {
+                    title: 'Remix Auth',
+                    value: 'remix-auth',
+                    selected: false
+                },
+                {
                     title: 'OpenAPI Fetch',
                     value: 'openapi-fetch',
                     selected: false
@@ -165,10 +180,6 @@ async function main() {
 
     createRemixProject(directory, packageManager);
     shell.cd(directory);
-
-    if (git) {
-        createGitRepository();
-    }
 
     if (mantine) {
         installMantine(packageManager, mantinePackages, directory);
@@ -225,11 +236,11 @@ import {wrapActions} from "~/utils/error-wrapper";
 type ActionsRecord = Record<string, () => Promise<TypedResponse<unknown>>>;
 type ResponsesRecord<Actions extends ActionsRecord> = {
     [Action in keyof Actions]: Actions[Action] extends () => Promise<TypedResponse<infer Result>> ? Result : never;
-};
+}
 type ResponsesUnion<Actions extends ActionsRecord> = ResponsesRecord<Actions>[keyof Actions];
 
 export function actions<Actions extends ActionsRecord>(request: Request, actions: Actions): Promise<TypedResponse<ResponsesUnion<Actions>>> {
-    return namedAction<Actions>(new URL(request.url) as any, wrapActions(actions));
+    return namedAction<Actions>(new URL(request.url) as any, wrapActions(actions))
 }`);
 
         fs.writeFileSync(`./app/utils/fetcher.ts`, `import {SerializeFrom} from "@remix-run/node";
@@ -306,7 +317,7 @@ import {IconCheck, IconExclamationMark} from "@tabler/icons-react";
 
 export function showSuccessNotification(message: string) {
     notifications.show({
-        title: "Successo!",
+        title: "Success!",
         color: 'green',
         message: message,
         withBorder: true,
@@ -316,7 +327,7 @@ export function showSuccessNotification(message: string) {
 
 export function showErrorNotification(message: string) {
     notifications.show({
-        title: "Errore!",
+        title: "Error!",
         color: 'red',
         message: message,
         withBorder: true,
@@ -330,7 +341,7 @@ import {modals} from "@mantine/modals";
 import {Button, Stack} from "@mantine/core";
 
 export function confirmModal({
-                                 title = 'Sei sicuro?',
+                                 title = 'Are you sure?',
                                  message,
                                  onConfirm,
                                  onCancel = () => {
@@ -349,8 +360,8 @@ export function confirmModal({
         children: message,
         centered: true,
         labels: {
-            confirm: 'Conferma',
-            cancel: 'Annulla'
+            confirm: 'Confirm',
+            cancel: 'Cancel'
         },
         onConfirm() {
             onConfirm();
@@ -517,10 +528,9 @@ if (window.requestIdleCallback) {
 }`);
 
         fs.writeFileSync(`./app/entry.server.tsx`, `import { PassThrough } from "stream";
-import type { EntryContext } from "@remix-run/node";
-import { Response } from "@remix-run/node";
+import { createReadableStreamFromReadable, EntryContext } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
-import isbot from "isbot";
+import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import { createInstance } from "i18next";
 import i18next from "./i18next.server";
@@ -565,11 +575,12 @@ export default async function handleRequest(
       {
         [callbackName]: () => {
           let body = new PassThrough();
+          const stream = createReadableStreamFromReadable(body);
 
           responseHeaders.set("Content-Type", "text/html");
 
           resolve(
-            new Response(body, {
+            new Response(stream, {
               headers: responseHeaders,
               status: didError ? 500 : responseStatusCode,
             })
@@ -594,9 +605,11 @@ export default async function handleRequest(
 
         let rootTsx = fs.readFileSync(`./app/root.tsx`, 'utf-8');
 
-        rootTsx = `import { useChangeLanguage } from "remix-i18next";
-import { useTranslation } from "react-i18next";
+        rootTsx = `import {useTranslation} from "react-i18next";
 import i18next from "~/i18next.server";
+import {json, LoaderFunctionArgs} from "@remix-run/node";
+import {useEffect} from "react";
+import {useLoaderData} from "@remix-run/react";
 ${rootTsx}`;
 
 
@@ -640,8 +653,122 @@ export default function App() {
         fs.writeFileSync(`./app/root.tsx`, rootTsx);
     }
 
+    if (otherFeatures.includes('remix-flat-routes')) {
+        shell.exec(`${packageManager} ${secondCommand} remix-flat-routes`);
+
+        let viteConfig = fs.readFileSync(`./vite.config.ts`, 'utf-8');
+        viteConfig = `import flatRoutes from "remix-flat-routes";
+        ${viteConfig}`;
+
+        viteConfig = viteConfig.replace(`remix(`, `remix({
+    routes: async (defineRoutes) => {
+      return flatRoutes('routes', defineRoutes);
+    }
+  }`);
+
+        fs.writeFileSync(`./vite.config.ts`, viteConfig);
+    }
+
+    if (otherFeatures.includes('remix-auth')) {
+        shell.exec(`${packageManager} ${secondCommand} remix-auth remix-auth-form bcrypt @types/bcrypt`);
+        shell.mkdir('-p', `./app/auth`);
+
+        fs.writeFileSync(`./app/auth/auth.server.ts`, `import {Authenticator} from "remix-auth";
+import {sessionStorage} from "~/auth/session.server";
+import {User} from "@prisma/client";
+import {FormStrategy} from "remix-auth-form";
+import {database} from "~/database/database";
+import bcrypt from "bcrypt";
+
+export const authenticator = new Authenticator<User>(sessionStorage);
+
+authenticator.use(
+    new FormStrategy(async ({form}) => {
+        const email = form.get("email");
+        const password = form.get("password");
+
+        if (!email) {
+            throw new Error("Email is required");
+        }
+
+        if (!password) {
+            throw new Error("Password is required");
+        }
+
+        const user = await database.user.findUnique({
+            where: {
+                email: email as string
+            }
+        });
+
+        if (!user) {
+            throw new Error("Invalid credentials");
+        }
+
+        const isValid = await bcrypt.compare(password as string, user.password);
+        
+        if (!isValid) {
+            throw new Error("Invalid credentials");
+        }
+        
+        return user;
+    }),
+    "user-password"
+);`);
+
+            fs.writeFileSync(`./app/auth/session.server.ts`, `import {createCookieSessionStorage} from "@remix-run/node";
+
+export const sessionStorage = createCookieSessionStorage({
+    cookie: {
+        name: "__session",
+        sameSite: "lax",
+        path: "/",
+        httpOnly: true,
+        secrets: [process.env.SESSION_SECRET || "CHANGE_ME_PLEASE"],
+        secure: process.env.NODE_ENV === "production",
+    }
+});
+
+export const {
+    getSession,
+    commitSession,
+    destroySession
+} = sessionStorage;`);
+
+            let prismaSchema = fs.readFileSync(`./prisma/schema.prisma`, 'utf-8');
+            prismaSchema = prismaSchema + `
+            
+model User {
+  id       Int    @id @default(autoincrement())
+  uuid     String @unique @default(uuid())
+  email    String @unique
+  name     String
+  password String
+}`;
+
+            fs.writeFileSync(`./prisma/schema.prisma`, prismaSchema);
+
+            shell.exec(`${getPackageManagerExecuteCommand(packageManager)} prisma generate`);
+    }
+
+    if (otherFeatures.includes('remix-routes')) {
+        shell.exec(`${packageManager} ${secondCommand} remix-routes`);
+
+        let viteConfig = fs.readFileSync(`./vite.config.ts`, 'utf-8');
+        viteConfig = `import { remixRoutes } from "remix-routes/vite";
+        ${viteConfig}`;
+
+        viteConfig = viteConfig.replace(`tsconfigPaths()`, `remixRoutes(), tsconfigPaths()`);
+
+        fs.writeFileSync(`./vite.config.ts`, viteConfig);
+    }
+
+    if (git) {
+        createGitRepository();
+    }
+
     console.log();
-    console.log(kleur.bold().green('Project created successfully!'));
+    console.log(kleur.bold().green('Project created successfully! 🎉'));
 }
 
 function createRemixProject(directory: string, packageManager: string) {
@@ -650,6 +777,7 @@ function createRemixProject(directory: string, packageManager: string) {
 
 function createGitRepository() {
     shell.exec(`git init`);
+    shell.exec(`git add .`);
 }
 
 function installMantine(packageManager: string, mantinePackages: string[], directory: string) {
@@ -664,7 +792,7 @@ function installMantine(packageManager: string, mantinePackages: string[], direc
     rootTsx = `import '@mantine/dates/styles.css';\n${rootTsx}`;
 
     for (const mantinePackage of mantinePackages) {
-        if (mantinePackage === 'mantine-react-table@alpha' || mantinePackage === 'form') {
+        if (mantinePackage === 'mantine-react-table@alpha' || mantinePackage === '@mantine/form' || mantinePackage === '@mantine/modals') {
             continue;
         }
 
@@ -681,17 +809,18 @@ function installMantine(packageManager: string, mantinePackages: string[], direc
         rootTsx = `import {Notifications} from '@mantine/notifications';\n${rootTsx}`;
     }
 
-    rootTsx = rootTsx.replace(`<Links/>`, `<ColorSchemeScript/>
-<Links/>`);
+    rootTsx = rootTsx.replace(`<Links />`, `<ColorSchemeScript />
+            <Links />
+            <title>Fumaz App</title>`);
 
     rootTsx = rootTsx.replace('<body>', `<body>
 <MantineProvider>
-${mantinePackages.includes('modals') ? '<ModalsProvider>' : ''}
-${mantinePackages.includes('notifications') ? '<Notifications/>' : ''}
+${mantinePackages.includes('@mantine/modals') ? '<ModalsProvider>' : ''}
+${mantinePackages.includes('@mantine/notifications') ? '<Notifications/>' : ''}
 `);
 
     rootTsx = rootTsx.replace('</body>', `
-${mantinePackages.includes('modals') ? '</ModalsProvider>' : ''}
+${mantinePackages.includes('@mantine/modals') ? '</ModalsProvider>' : ''}
 </MantineProvider>
 </body>
 `);
@@ -704,10 +833,12 @@ function installPrisma(packageManager: string, directory: string) {
     shell.exec(`${getPackageManagerExecuteCommand(packageManager)} prisma init`);
     shell.mkdir('-p', `./app/database`);
 
-    fs.writeFileSync(`./app/database/database.tsx`, `import {PrismaClient} from '@prisma/client';
+    fs.writeFileSync(`./app/database/database.ts`, `import {PrismaClient} from '@prisma/client';
 
 export const database = new PrismaClient();
 `);
+
+    shell.exec(`${getPackageManagerExecuteCommand(packageManager)} prisma generate`);
 }
 
 function getPackageManagerExecuteCommand(packageManager: string) {
