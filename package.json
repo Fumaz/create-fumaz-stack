@@ -1,6 +1,6 @@
 {
   "name": "create-fumaz",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "type": "module",
   "description": "Create an app using the Fumaz stack",
   "scripts": {
@@ -26,6 +26,8 @@
   },
   "homepage": "https://github.com/Fumaz/create-fumaz#readme",
   "dependencies": {
+    "glob": "^10.3.10",
+    "prettier": "^3.2.5",
     "prompts": "^2.4.2",
     "shelljs": "^0.8.5"
   },
