@@ -3,22 +3,24 @@ import fs from "node:fs";
 import {getPackageManagerAddCommand, getPackageManagerExecuteCommand} from "./utils.js";
 
 export function setupRemixAuth(packageManager: string, options: Record<string, boolean>) {
-    shell.exec(`${packageManager} ${getPackageManagerAddCommand(packageManager)} remix-auth remix-auth-form bcrypt @types/bcrypt`);
+    shell.exec(`${packageManager} ${getPackageManagerAddCommand(packageManager)} remix-auth remix-auth-json bcrypt @types/bcrypt`);
     shell.mkdir('-p', `./app/auth`);
 
     fs.writeFileSync(`./app/auth/auth.server.ts`, `import {Authenticator} from "remix-auth";
 import {sessionStorage} from "~/auth/session.server";
 import {User} from "@prisma/client";
-import {FormStrategy} from "remix-auth-form";
+import {JsonStrategy} from "remix-auth-json";
 import {database} from "~/database/database";
 import bcrypt from "bcrypt";
 
 export const authenticator = new Authenticator<User>(sessionStorage);
 
 authenticator.use(
-    new FormStrategy(async ({form}) => {
-        const email = form.get("email");
-        const password = form.get("password");
+    new JsonStrategy(async ({json}) => {
+        const {
+            email,
+            password
+        } = json;
 
         if (!email) {
             throw new Error("Email is required");

@@ -105,9 +105,9 @@ async function main() {
             initial: false,
         },
         {
-            type: 'toggle',
+            type: prev => prev ? 'toggle' : null,
             name: 'remixAuth',
-            message: 'Would you like to include Remix Auth? (requires Prisma)',
+            message: 'Would you like to include Remix Auth?',
             active: 'yes',
             inactive: 'no',
             initial: false,
