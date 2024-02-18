@@ -238,7 +238,9 @@ async function main() {
         mantine,
         mantinePackages,
         otherFeatures,
-        packageManager
+        packageManager,
+        prisma,
+        remixAuth,
     } = response;
 
     createRemixProject(directory, packageManager);
@@ -248,7 +250,7 @@ async function main() {
         setupMantine(packageManager, mantinePackages);
     }
 
-    if (otherFeatures.includes('prisma')) {
+    if (prisma) {
         setupPrisma(packageManager);
     }
 
@@ -280,7 +282,7 @@ async function main() {
         setupRemixFlatRoutes(packageManager);
     }
 
-    if (otherFeatures.includes('remix-auth')) {
+    if (remixAuth) {
         setupRemixAuth(packageManager, {});
     }
 
@@ -288,11 +290,11 @@ async function main() {
         setupRemixRoutes(packageManager);
     }
 
+    await runPrettier();
+
     if (git) {
         createGitRepository();
     }
-
-    await runPrettier();
 
     console.log();
     console.log(kleur.bold().green('Project created successfully! 🎉'));
