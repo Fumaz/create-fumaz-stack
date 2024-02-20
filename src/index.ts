@@ -241,6 +241,7 @@ async function main() {
         packageManager,
         prisma,
         remixAuth,
+        i18n
     } = response;
 
     createRemixProject(directory, packageManager);
@@ -274,7 +275,7 @@ async function main() {
         setupOpenAPIFetch(packageManager);
     }
 
-    if (otherFeatures.includes('i18n')) {
+    if (i18n) {
         setupI18n(packageManager);
     }
 
