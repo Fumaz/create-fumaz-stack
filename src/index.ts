@@ -302,7 +302,7 @@ async function main() {
 }
 
 function createRemixProject(directory: string, packageManager: string) {
-    shell.exec(`${packageManager} create remix ${directory} --template remix-run/remix/templates/unstable-vite --package-manager ${packageManager} --yes --no-git-init --install --no-motion`);
+    shell.exec(`${packageManager} create remix ${directory} --template remix-run/remix/templates/vite --package-manager ${packageManager} --yes --no-git-init --install --no-motion`);
 }
 
 function createGitRepository() {
